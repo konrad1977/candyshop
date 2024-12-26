@@ -30,7 +30,7 @@
   "Customization group for hide-show-desktop."
   :group 'convenience)
 
-(defcustom hide-show-desktop-alpha-values '(100 . 85)
+(defcustom candyshop-alpha-values '(100 . 85)
   "Alpha values for toggling frame transparency.
 A cons cell where car is the opaque value and cdr is the transparent value."
   :type '(cons (integer :tag "Opaque value")
@@ -47,11 +47,11 @@ When enabled, desktop icons are hidden and frame transparency is adjusted."
   (if candyshop-mode
       (progn
         (candyshop-desktop-icons-off)
-        (candy-shop-set-frame-opacity (cdr hide-show-desktop-alpha-values))
+        (candy-shop-set-frame-opacity (cdr candyshop-alpha-values))
         (candyshop-hide-all-windows-except-emacs))
     (progn
       (candyshop-desktop-icons-on)
-      (candy-shop-set-frame-opacity (car hide-show-desktop-alpha-values))
+      (candy-shop-set-frame-opacity (car candyshop-alpha-values))
       (candyshop-show-all-windows))))
 
 (defun candyshop-desktop-icons-off ()
@@ -95,11 +95,11 @@ When enabled, desktop icons are hidden and frame transparency is adjusted."
   "Toggle between opaque and transparent frame states."
   (interactive)
   (let ((current-alpha (frame-parameter nil 'alpha)))
-    (if (or (equal current-alpha (car hide-show-desktop-alpha-values))
+    (if (or (equal current-alpha (car candyshop-alpha-values))
             (equal current-alpha 100)
             (not current-alpha))
-        (candy-shop-set-frame-opacity (cdr hide-show-desktop-alpha-values))
-      (candy-shop-set-frame-opacity (car hide-show-desktop-alpha-values)))))
+        (candy-shop-set-frame-opacity (cdr candyshop-alpha-values))
+      (candy-shop-set-frame-opacity (car candyshop-alpha-values)))))
 
 (provide 'candyshop)
 ;; candyshop.el ends here

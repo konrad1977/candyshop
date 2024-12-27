@@ -13,6 +13,6 @@ Candyshop is a small package for Emacs and OSX users. It will automatically setu
 ```
 
 <p align="center">
-  <img src="https://github.com/konrad1977/candyshop/blob/master/screenshots/dashboard.png" 
+  <img src="https://github.com/konrad1977/candyshop/blob/main/screenshot/dashboard.png" 
   alt="Candy shop dashboard screenshot. vs"/>
 </p>

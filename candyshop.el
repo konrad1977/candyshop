@@ -1,4 +1,4 @@
-;;; hide-show-desktop.el --- Toggle desktop icons in Emacs
+;;; candyshop.el --- Toggle desktop icons in Emacs
 
 ;; Copyright (C) 2024 Mikael Konradsson
 
@@ -37,66 +37,127 @@ A cons cell where car is the opaque value and cdr is the transparent value."
                (integer :tag "Transparent value"))
   :group 'candyshop-show-desktop)
 
+(defcustom candyshop-animation-steps 10
+  "Number of steps for transparency animation."
+  :type 'integer
+  :group 'candyshop-show-desktop)
+
+(defvar candyshop-window-configuration nil
+  "Store window configuration before hiding windows.")
+
+(defvar candyshop-debug nil
+  "Enable debug messages when non-nil.")
+
+(defcustom candyshop-mode-line-indicator '(" 🍬" (:eval (if candyshop-mode "ON" "OFF")))
+  "Mode line indicator for candyshop-mode."
+  :type 'sexp
+  :group 'candyshop-show-desktop)
+
+(put 'candyshop-mode-line-indicator 'risky-local-variable t)
+
+(defun candyshop-debug-message (format-string &rest args)
+  "Display debug message if debugging is enabled."
+  (when candyshop-debug
+    (apply #'message (concat "Candyshop: " format-string) args)))
+
+(defun candyshop-save-window-configuration ()
+  "Save current window configuration."
+  (setq candyshop-window-configuration
+        (current-window-configuration)))
+
+(defun candyshop-restore-window-configuration ()
+  "Restore saved window configuration."
+  (when candyshop-window-configuration
+    (set-window-configuration candyshop-window-configuration)))
+
+(defun candyshop-ensure-macos ()
+  "Ensure the current system is macOS."
+  (unless (eq system-type 'darwin)
+    (user-error "This function is only supported on macOS")))
+
 ;;;###autoload
 (define-minor-mode candyshop-mode
   "Toggle Candyshop mode.
 When enabled, desktop icons are hidden and frame transparency is adjusted."
   :init-value nil
-  :lighter " 🍬"
+  :lighter candyshop-mode-line-indicator
   :global t
+  (candyshop-ensure-macos)
   (if candyshop-mode
       (progn
+        (candyshop-debug-message "Enabling candyshop-mode")
+        (candyshop-save-window-configuration)
         (candyshop-desktop-icons-off)
-        (candy-shop-set-frame-opacity (cdr candyshop-alpha-values))
+        (candyshop-animate-transparency
+         (car candyshop-alpha-values)
+         (cdr candyshop-alpha-values))
         (candyshop-hide-all-windows-except-emacs))
     (progn
+      (candyshop-debug-message "Disabling candyshop-mode")
       (candyshop-desktop-icons-on)
-      (candy-shop-set-frame-opacity (car candyshop-alpha-values))
-      (candyshop-show-all-windows))))
+      (candyshop-animate-transparency
+       (cdr candyshop-alpha-values)
+       (car candyshop-alpha-values))
+      (candyshop-show-all-windows)
+      (candyshop-restore-window-configuration))))
 
 (defun candyshop-desktop-icons-off ()
   "Hide desktop icons."
   (interactive)
-  (when (string-equal system-type 'darwin)
-    (candyshop-show-desktop nil)))
+  (candyshop-ensure-macos)
+  (candyshop-show-desktop nil))
 
 (defun candyshop-desktop-icons-on ()
   "Show desktop icons."
   (interactive)
-  (when (string-equal system-type 'darwin)
-    (candyshop-show-desktop t)))
+  (candyshop-ensure-macos)
+  (candyshop-show-desktop t))
 
 (defun candyshop-hide-all-windows-except-emacs ()
   "Hide all candyshop application from Emacs."
   (interactive)
+  (candyshop-ensure-macos)
   (shell-command "osascript -e 'tell application \"System Events\" to set visible of every process whose name is not \"Emacs\" to false'"))
 
 (defun candyshop-show-all-windows ()
   "Show all candyshop application windows from Emacs."
   (interactive)
+  (candyshop-ensure-macos)
   (shell-command "osascript -e 'tell application \"System Events\" to set visible of every process to true'"))
 
 (defun candyshop-show-desktop (isON)
   "Toggle desktop icons on or off."
-  (when (string-equal system-type 'darwin)
-    (shell-command (format "defaults write com.apple.finder CreateDesktop %s" (if isON "true" "false")))
-    (candyshop-desktop-restart-finder)))
+  (candyshop-ensure-macos)
+  (shell-command (format "defaults write com.apple.finder CreateDesktop %s" (if isON "true" "false")))
+  (candyshop-desktop-restart-finder))
 
 (defun candyshop-desktop-restart-finder ()
   "Restart Finder."
-  (when (string-equal system-type 'darwin)
-    (shell-command "killall Finder")))
+  (candyshop-ensure-macos)
+  (shell-command "killall Finder"))
 
 (defun candy-shop-set-frame-opacity (opacity)
   "Set the frame opacity to OPACITY."
   (set-frame-parameter nil 'alpha opacity))
+
+(defun candyshop-animate-transparency (start-alpha end-alpha)
+  "Animate transparency from START-ALPHA to END-ALPHA."
+  (let* ((start (if (listp start-alpha) (car start-alpha) start-alpha))
+         (end (if (listp end-alpha) (car end-alpha) end-alpha))
+         (diff (- end start))
+         (step (/ diff candyshop-animation-steps))
+         (current start))
+    (dotimes (i candyshop-animation-steps)
+      (setq current (+ current step))
+      (candy-shop-set-frame-opacity current)
+      (sit-for 0.02))))
 
 (defun candyshop-toggle-desktop-icon-alpha ()
   "Toggle between opaque and transparent frame states."
   (interactive)
   (let ((current-alpha (frame-parameter nil 'alpha)))
     (if (or (equal current-alpha (car candyshop-alpha-values))
-            (equal current-alpha 100)
+            (equal current-alpha (cdr candyshop-alpha-values))
             (not current-alpha))
         (candy-shop-set-frame-opacity (cdr candyshop-alpha-values))
       (candy-shop-set-frame-opacity (car candyshop-alpha-values)))))

@@ -11,3 +11,8 @@ Candyshop is a small package for Emacs and OSX users. It will automatically setu
   :config
   (setq candyshop-alpha-values '(100 90)))
 ```
+
+<p align="center">
+  <img src="https://github.com/konrad1977/candyshop/blob/master/screenshots/dashboard.png" 
+  alt="Candy shop dashboard screenshot. vs"/>
+</p>
